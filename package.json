@@ -1,0 +1,40 @@
+{
+  "name": "trpc-db-collection",
+  "type": "module",
+  "version": "0.0.1",
+  "description": "tRPC collection for Tanstack DB",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.js",
+      "require": "./dist/server.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "prepublishOnly": "npm run build",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [],
+  "author": "Alexis Tacnet <alexistacnet@gmail.com>",
+  "license": "MIT",
+  "packageManager": "pnpm@10.13.1",
+  "devDependencies": {
+    "@types/node": "^24.5.0",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "@tanstack/react-db": "^0.1.6",
+    "@tanstack/store": "^0.7.5",
+    "@trpc/server": "^11.4.3"
+  }
+}
