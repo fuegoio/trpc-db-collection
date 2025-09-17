@@ -26,6 +26,10 @@
   "keywords": [],
   "author": "Alexis Tacnet <alexistacnet@gmail.com>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fuegoio/trpc-db-collection.git"
+  },
   "packageManager": "pnpm@10.13.1",
   "devDependencies": {
     "@types/node": "^24.5.0",
