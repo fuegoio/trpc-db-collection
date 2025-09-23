@@ -159,10 +159,10 @@ export function trpcCollectionOptions<TItem extends TrpcItem>(
     },
 
     onUpdate: async ({ transaction }) => {
-      const { modified } = transaction.mutations[0];
+      const { modified, changes } = transaction.mutations[0];
       const result = await config.trpcRouter.update.mutate({
         id: modified.id,
-        data: modified,
+        data: changes,
       });
       await awaitEventId(result.eventId);
       return { result };
