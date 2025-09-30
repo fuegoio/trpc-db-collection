@@ -30,7 +30,7 @@ interface RequiredTrpcRouter<TItem extends TrpcItem> {
     subscribe: (
       input: { lastEventId: number | null },
       opts: {
-        onData: (data: { id: string; data: TrpcSyncEvent<TItem> }) => void;
+        onData: (data: [id: string, data: TrpcSyncEvent<TItem>]) => void;
       },
     ) => {
       unsubscribe: () => void;
@@ -66,7 +66,7 @@ export function trpcCollectionOptions<TItem extends TrpcItem>(
     const subscription = config.trpcRouter.listen.subscribe(
       { lastEventId },
       {
-        onData: ({ data }) => {
+        onData: ([_id, data]) => {
           if (!isInitialSyncComplete) {
             // Buffer events during initial sync to prevent race conditions
             eventBuffer.push(data);
@@ -75,6 +75,7 @@ export function trpcCollectionOptions<TItem extends TrpcItem>(
 
           // Process real-time events
           begin();
+          console.log("Received event", data);
           write({ type: data.action, value: data.data });
           commit();
 

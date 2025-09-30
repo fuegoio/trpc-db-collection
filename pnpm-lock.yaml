@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@tanstack/react-db':
-        specifier: ^0.1.21
-        version: 0.1.23(react@19.1.1)(typescript@5.9.2)
+        specifier: ^0.1.24
+        version: 0.1.24(react@19.1.1)(typescript@5.9.2)
       '@tanstack/store':
         specifier: ^0.7.5
         version: 0.7.7
@@ -320,18 +320,18 @@ packages:
   '@standard-schema/spec@1.0.0':
     resolution: {integrity: sha512-m2bOd0f2RT9k8QJx1JN85cZYyH1RqFBdlwtkSlf4tBDYLCiiZnv1fIIwacK6cqwXavOydf0NPToMQgpKq+dVlA==}
 
-  '@tanstack/db-ivm@0.1.8':
-    resolution: {integrity: sha512-JX7T+uv8iecz+R4ZeW3VA+U2c3TVz5yPmQUIzNGT16ftdoHF0G0Pfpbk/27HnZ/6jpTawXXEt9NyqZZwpxta7g==}
+  '@tanstack/db-ivm@0.1.9':
+    resolution: {integrity: sha512-EfrtTn34SQ6HOw1ZI4O1DKsrCSCzMufIYMpAYlO6kE7/DMZ7M9N8tQdXYyN2ZasL0zR8zjB1AHj4tMqcmPIt7w==}
     peerDependencies:
       typescript: '>=4.7'
 
-  '@tanstack/db@0.4.1':
-    resolution: {integrity: sha512-U7a1Px8tZK3BGDnPN1P5if8sJrqHXlhCkD2wkmdPnBqkXv++gyuNQ4j5px8LQkv9h9X4zGhSIlwbsHM1b82xgw==}
+  '@tanstack/db@0.4.2':
+    resolution: {integrity: sha512-6P3JF1q8ySN/zNsKykP+KfuXT3uMDBjTHE6COqxqDUIWFwaB40d1vpaRkdzm6NL4Eq1bGxslNJH+tZjgE1St5Q==}
     peerDependencies:
       typescript: '>=4.7'
 
-  '@tanstack/react-db@0.1.23':
-    resolution: {integrity: sha512-S3a0H70W2IFoATsLA13HQ5n2FonuNIrCzus8giN72EUnIpigrLCIjeiTHqhGKKlh9YGCio7AKv0z80g2cJvxxA==}
+  '@tanstack/react-db@0.1.24':
+    resolution: {integrity: sha512-hj4ZJrc5noZStjX1h5Q7QwbDOa5qZaPdfY9eoONgVKQCqoVQk5gqfI4QzFMEQEUlq7RoHiul4QU3A0Ck3V53LQ==}
     peerDependencies:
       react: '>=16.8.0'
 
@@ -882,21 +882,21 @@ snapshots:
 
   '@standard-schema/spec@1.0.0': {}
 
-  '@tanstack/db-ivm@0.1.8(typescript@5.9.2)':
+  '@tanstack/db-ivm@0.1.9(typescript@5.9.2)':
     dependencies:
       fractional-indexing: 3.2.0
       sorted-btree: 1.8.1
       typescript: 5.9.2
 
-  '@tanstack/db@0.4.1(typescript@5.9.2)':
+  '@tanstack/db@0.4.2(typescript@5.9.2)':
     dependencies:
       '@standard-schema/spec': 1.0.0
-      '@tanstack/db-ivm': 0.1.8(typescript@5.9.2)
+      '@tanstack/db-ivm': 0.1.9(typescript@5.9.2)
       typescript: 5.9.2
 
-  '@tanstack/react-db@0.1.23(react@19.1.1)(typescript@5.9.2)':
+  '@tanstack/react-db@0.1.24(react@19.1.1)(typescript@5.9.2)':
     dependencies:
-      '@tanstack/db': 0.4.1(typescript@5.9.2)
+      '@tanstack/db': 0.4.2(typescript@5.9.2)
       react: 19.1.1
       use-sync-external-store: 1.5.0(react@19.1.1)
     transitivePeerDependencies:

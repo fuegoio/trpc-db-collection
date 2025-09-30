@@ -1,7 +1,7 @@
 {
   "name": "trpc-db-collection",
   "type": "module",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "tRPC collection for Tanstack DB",
   "exports": {
     ".": {
@@ -37,7 +37,7 @@
     "typescript": "^5.9.2"
   },
   "peerDependencies": {
-    "@tanstack/react-db": "^0.1.21",
+    "@tanstack/react-db": "^0.1.24",
     "@tanstack/store": "^0.7.5",
     "@trpc/server": "^11.4.3"
   }
