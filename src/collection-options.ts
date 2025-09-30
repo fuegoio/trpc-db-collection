@@ -95,6 +95,14 @@ export function trpcCollectionOptions<TItem extends TrpcItem>(
       {
         onData: (event) => {
           logger.info("Received sync event", event);
+
+          // Handle both array and object formats
+          // This is quite useful as tRPC expects a rigorous SSE format
+          // that is not always correctly proxied by some servers.
+          if (Array.isArray(event)) {
+            event = { id: event[0], data: event[1] };
+          }
+
           const { data } = event;
           if (!isInitialSyncComplete) {
             // Buffer events during initial sync to prevent race conditions
