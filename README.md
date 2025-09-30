@@ -41,91 +41,102 @@ First, create a tRPC router that follows the required structure:
 
 ```typescript
 // src/lib/trpc/todos.ts
-import { router, authedProcedure } from '@/lib/trpc'
-import { z } from 'zod'
-import { eq } from 'drizzle-orm'
-import { todosTable, selectTodoSchema, createTodoSchema, updateTodoSchema } from '@/db/schema'
-import { TrpcSync } from 'trpc-db-collection'
+import { router, authedProcedure } from "@/lib/trpc";
+import { z } from "zod";
+import { eq } from "drizzle-orm";
+import {
+  todosTable,
+  selectTodoSchema,
+  createTodoSchema,
+  updateTodoSchema,
+} from "@/db/schema";
+import { TrpcSync } from "trpc-db-collection";
 
-type Todo = z.infer<typeof selectTodoSchema>
-const todoRouterSync = new TrpcSync<Todo>()
+type Todo = z.infer<typeof selectTodoSchema>;
+const todoRouterSync = new TrpcSync<Todo>();
 
 export const todosRouter = router({
   list: authedProcedure.query(async ({ ctx }) => {
-    return ctx.db.select().from(todosTable)
-      .where(eq(todosTable.userId, ctx.session.user.id))
+    return ctx.db
+      .select()
+      .from(todosTable)
+      .where(eq(todosTable.userId, ctx.session.user.id));
   }),
-  
+
   create: authedProcedure
     .input(createTodoSchema)
     .mutation(async ({ ctx, input }) => {
-      const [newTodo] = await ctx.db.insert(todosTable)
+      const [newTodo] = await ctx.db
+        .insert(todosTable)
         .values({ ...input, userId: ctx.session.user.id })
-        .returning()
-      
+        .returning();
+
       const eventId = await todoRouterSync.registerEvent({
         currentUserId: ctx.session.user.id,
-        event: { action: 'insert', data: newTodo }
-      })
-      
-      return { item: newTodo, eventId }
+        event: { action: "insert", data: newTodo },
+      });
+
+      return { item: newTodo, eventId };
     }),
-  
+
   update: authedProcedure
     .input(z.object({ id: z.number(), data: updateTodoSchema }))
     .mutation(async ({ ctx, input }) => {
-      const [updatedTodo] = await ctx.db.update(todosTable)
+      const [updatedTodo] = await ctx.db
+        .update(todosTable)
         .set(input.data)
         .where(eq(todosTable.id, input.id))
-        .returning()
-      
+        .returning();
+
       const eventId = await todoRouterSync.registerEvent({
         currentUserId: ctx.session.user.id,
-        event: { action: 'update', data: updatedTodo }
-      })
-      
-      return { item: updatedTodo, eventId }
+        event: { action: "update", data: updatedTodo },
+      });
+
+      return { item: updatedTodo, eventId };
     }),
-  
+
   delete: authedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      const [deletedTodo] = await ctx.db.delete(todosTable)
+      const [deletedTodo] = await ctx.db
+        .delete(todosTable)
         .where(eq(todosTable.id, input.id))
-        .returning()
-      
+        .returning();
+
       const eventId = await todoRouterSync.registerEvent({
         currentUserId: ctx.session.user.id,
-        event: { action: 'delete', data: deletedTodo }
-      })
-      
-      return { item: deletedTodo, eventId }
+        event: { action: "delete", data: deletedTodo },
+      });
+
+      return { item: deletedTodo, eventId };
     }),
-  
+
   listen: authedProcedure.subscription(({ ctx }) => {
     return todoRouterSync.eventsSubscription({
       userId: ctx.session.user.id,
       signal: undefined,
-      lastEventId: null
-    })
-  })
-})
+      lastEventId: null,
+    });
+  }),
+});
 ```
 
 ### 2. Create the Collection
 
 ```typescript
 // src/lib/collections.ts
-import { createCollection } from '@tanstack/react-db'
-import { trpc } from '@/lib/trpc'
-import { trpcCollectionOptions } from 'trpc-db-collection'
+import { createCollection } from "@tanstack/react-db";
+import { trpc } from "@/lib/trpc";
+import { trpcCollectionOptions } from "trpc-db-collection";
 
 export const todosCollection = createCollection(
   trpcCollectionOptions({
+    name: "todos",
     trpcRouter: trpc.todos,
-    rowUpdateMode: 'partial' // or 'full'
-  })
-)
+    rowUpdateMode: "partial", // or 'full'
+  }),
+);
 ```
 
 ### 3. Use in Your Components
@@ -136,10 +147,10 @@ import { useLiveQuery } from '@tanstack/react-db'
 import { todosCollection } from '@/lib/collections'
 
 function TodosPage() {
-  const { data: todos } = useLiveQuery((q) => 
+  const { data: todos } = useLiveQuery((q) =>
     q.from({ todosCollection }).orderBy('createdAt', 'desc')
   )
-  
+
   return (
     <div>
       {todos.map(todo => (
@@ -155,7 +166,7 @@ function TodoItem({ todo }) {
       <input
         type="checkbox"
         checked={todo.completed}
-        onChange={() => 
+        onChange={() =>
           todosCollection.update(todo.id, { completed: !todo.completed })}
       />
       {todo.title}
@@ -164,39 +175,20 @@ function TodoItem({ todo }) {
 }
 ```
 
-## Advanced Configuration
-
-### Collection Options
+## Collection Options
 
 The `trpcCollectionOptions` function accepts:
 
 ```typescript
 interface TrpcCollectionConfig<TItem extends TrpcItem> {
+  name: string;
   trpcRouter: RequiredTrpcRouter<TItem>;
-  rowUpdateMode?: 'partial' | 'full';
-  // Plus all standard Tanstack DB CollectionConfig options
-}
-```
-
-### Required tRPC Router Structure
-
-Your tRPC router must implement these procedures:
-
-```typescript
-interface RequiredTrpcRouter<TItem extends TrpcItem> {
-  list: { query: () => Promise<TItem[]> };
-  create: { mutate: (input: Omit<TItem, 'id'>) => Promise<TrpcMutationResponse<TItem>> };
-  update: { mutate: (input: { id: TItem['id']; data: Partial<TItem> }) => Promise<TrpcMutationResponse<TItem>> };
-  delete: { mutate: (input: { id: TItem['id'] }) => Promise<TrpcMutationResponse<TItem>> };
-  listen: {
-    subscribe: (
-      input: { lastEventId: number | null },
-      opts: {
-        onData: (data: { id: string; data: TrpcSyncEvent<TItem> }) => void;
-        onError?: (error: Error) => void;
-      }
-    ) => { unsubscribe: () => void }
+  rowUpdateMode?: "partial" | "full";
+  logger?: {
+    enabled?: boolean;
+    level?: "debug" | "info" | "error" | "none";
   };
+  // Plus all standard Tanstack DB CollectionConfig options
 }
 ```
 
@@ -266,3 +258,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Tanstack DB Documentation](https://tanstack.com/db/latest/docs/overview)
 - [tRPC Documentation](https://trpc.io/docs)
 - [Example Project Source](https://github.com/fuegoio/trpc-db-collection/tree/main/example)
+

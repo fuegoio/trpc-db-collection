@@ -2,6 +2,7 @@ import type { CollectionConfig, SyncConfig } from "@tanstack/react-db";
 import type { TrpcItem } from "./items";
 import type { TrpcSyncEvent } from "./events";
 import { Store } from "@tanstack/store";
+import { type LoggerConfig, Logger } from "./logger";
 
 interface TrpcMutationResponse<TItem extends TrpcItem> {
   item: TItem;
@@ -44,14 +45,39 @@ interface TrpcCollectionConfig<TItem extends TrpcItem>
     CollectionConfig<TItem>,
     "onInsert" | "onUpdate" | "onDelete" | "sync" | "getKey"
   > {
+  /**
+   * The trpc router to use for syncing data.
+   * It needs to have the following methods:
+   * - list: query to get all items
+   * - create: mutation to create an item
+   * - update: mutation to update an item
+   * - delete: mutation to delete an item
+   * - listen: subscription to listen for changes
+   */
   trpcRouter: RequiredTrpcRouter<TItem>;
 
+  /**
+   * The name of the collection.
+   */
+  name: string;
+
+  /**
+   * The row update mode to use for syncing data.
+   * @default "partial"
+   */
   rowUpdateMode?: "partial" | "full";
+
+  /**
+   * The logger configuration to use for logging.
+   */
+  loggerConfig?: LoggerConfig;
 }
 
 export function trpcCollectionOptions<TItem extends TrpcItem>(
   config: TrpcCollectionConfig<TItem>,
 ): CollectionConfig<TItem> {
+  const logger = new Logger(config.loggerConfig, config.name);
+
   const receivedEventIds = new Store<Set<number>>(new Set());
 
   const sync: SyncConfig<TItem>["sync"] = (params) => {
@@ -68,7 +94,7 @@ export function trpcCollectionOptions<TItem extends TrpcItem>(
       { lastEventId },
       {
         onData: (event) => {
-          console.log("\x1b[30;42mReceived sync event\x1b[97;42m", event);
+          logger.info("Received sync event", event);
           const { data } = event;
           if (!isInitialSyncComplete) {
             // Buffer events during initial sync to prevent race conditions
@@ -85,13 +111,14 @@ export function trpcCollectionOptions<TItem extends TrpcItem>(
           lastEventId = data.id;
         },
         onError: (error) => {
-          console.error("Sync error:", error);
+          logger.error("Sync error:", error);
         },
       },
     );
 
     // 3. Perform initial data fetch
     async function initialSync() {
+      logger.info("Starting initial sync");
       try {
         const data = await config.trpcRouter.list.query();
 
@@ -117,8 +144,10 @@ export function trpcCollectionOptions<TItem extends TrpcItem>(
           commit();
           eventBuffer.splice(0);
         }
+
+        logger.info("Initial sync complete");
       } catch (error) {
-        console.error("Initial sync failed:", error);
+        logger.error("Initial sync failed:", error);
         throw error;
       } finally {
         // ALWAYS call markReady, even on error
@@ -131,11 +160,11 @@ export function trpcCollectionOptions<TItem extends TrpcItem>(
     // 4. Return cleanup function
     return () => {
       subscription.unsubscribe();
-      // Clean up any timers, intervals, or other resources
     };
   };
 
   const awaitEventId = (eventId: number): Promise<boolean> => {
+    logger.debug("Waiting for event id", eventId);
     if (receivedEventIds.state.has(eventId)) return Promise.resolve(true);
 
     return new Promise((resolve) => {
@@ -143,6 +172,7 @@ export function trpcCollectionOptions<TItem extends TrpcItem>(
         if (receivedEventIds.state.has(eventId)) {
           unsubscribe();
           resolve(true);
+          logger.debug("Received event id", eventId);
         }
       });
     });
@@ -157,6 +187,7 @@ export function trpcCollectionOptions<TItem extends TrpcItem>(
     },
     onInsert: async ({ transaction }) => {
       const { modified } = transaction.mutations[0];
+      logger.info("Inserting item", modified);
       const result = await config.trpcRouter.create.mutate({
         ...modified,
       });
@@ -166,6 +197,7 @@ export function trpcCollectionOptions<TItem extends TrpcItem>(
 
     onUpdate: async ({ transaction }) => {
       const { modified, changes } = transaction.mutations[0];
+      logger.info("Updating item", modified, changes);
       const result = await config.trpcRouter.update.mutate({
         id: modified.id,
         data: changes,
@@ -176,6 +208,7 @@ export function trpcCollectionOptions<TItem extends TrpcItem>(
 
     onDelete: async ({ transaction }) => {
       const { modified } = transaction.mutations[0];
+      logger.info("Deleting item", modified);
       const result = await config.trpcRouter.delete.mutate({
         id: modified.id,
       });
