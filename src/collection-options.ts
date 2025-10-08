@@ -3,6 +3,13 @@ import type { TrpcItem } from "./items";
 import type { TrpcSyncEvent } from "./events";
 import { Store } from "@tanstack/store";
 import { type LoggerConfig, Logger } from "./logger";
+import {
+  type Serializer,
+  jsonSerializer,
+  loadFromLocalStorage,
+  saveToLocalStorage,
+  updateLocalStorageAfterWrite,
+} from "./local-storage";
 
 interface TrpcMutationResponse<TItem extends TrpcItem> {
   item: TItem;
@@ -71,12 +78,26 @@ interface TrpcCollectionConfig<TItem extends TrpcItem>
    * The logger configuration to use for logging.
    */
   loggerConfig?: LoggerConfig;
+
+  /**
+   * The serializer to use for local storage.
+   * @default jsonSerializer
+   */
+  serializer?: Serializer;
+
+  /**
+   * Whether to enable local storage sync.
+   * @default true
+   */
+  localStorage?: boolean;
 }
 
 export function trpcCollectionOptions<TItem extends TrpcItem>(
   config: TrpcCollectionConfig<TItem>,
 ): CollectionConfig<TItem> {
   const logger = new Logger(config.loggerConfig, config.name);
+  const serializer = config.serializer ?? jsonSerializer;
+  const localStorageSyncEnabled = config.localStorage ?? true;
 
   const receivedEventIds = new Store<Set<number>>(new Set());
 
@@ -115,6 +136,14 @@ export function trpcCollectionOptions<TItem extends TrpcItem>(
           write({ type: data.action, value: data.data });
           commit();
 
+          if (localStorageSyncEnabled) {
+            updateLocalStorageAfterWrite(data.action, data.data, {
+              name: config.name,
+              logger,
+              localStorageSyncEnabled,
+            });
+          }
+
           receivedEventIds.setState((prev) => new Set([...prev, data.id]));
           lastEventId = data.id;
         },
@@ -128,28 +157,81 @@ export function trpcCollectionOptions<TItem extends TrpcItem>(
     async function initialSync() {
       logger.info("Starting initial sync");
       try {
-        const data = await config.trpcRouter.list.query();
+        // Try to load from local storage first if enabled
+        const cachedData = localStorageSyncEnabled
+          ? loadFromLocalStorage<TItem[]>(config.name)
+          : null;
 
         begin(); // Start a transaction
 
-        for (const item of data) {
-          write({
-            type: "insert",
-            value: item,
-          });
+        if (localStorageSyncEnabled && cachedData && cachedData.length > 0) {
+          logger.info(
+            "Loaded data from local storage",
+            cachedData.length,
+            "items",
+          );
+          for (const item of cachedData) {
+            write({
+              type: "insert",
+              value: item,
+            });
+          }
+          commit(); // Commit cached data
         }
 
-        commit(); // Commit the transaction
+        // Then fetch from network and update
+        const networkData = await config.trpcRouter.list.query();
+
+        // Clear existing data if we have network data
+        if (networkData.length > 0) {
+          begin();
+          // Clear existing data by removing all items
+          for (const item of cachedData || []) {
+            write({
+              type: "delete",
+              value: item,
+            });
+          }
+
+          // Add network data
+          for (const item of networkData) {
+            write({
+              type: "insert",
+              value: item,
+            });
+          }
+          commit();
+
+          // Save to local storage if enabled
+          if (localStorageSyncEnabled) {
+            saveToLocalStorage(config.name, networkData, serializer);
+            logger.info(
+              "Saved data to local storage",
+              networkData.length,
+              "items",
+            );
+          }
+        }
 
         // 4. Process buffered events
         isInitialSyncComplete = true;
         if (eventBuffer.length > 0) {
           begin();
           for (const event of eventBuffer) {
-            // Deduplicate if necessary based on your sync engine
             write({ type: event.action, value: event.data });
           }
           commit();
+
+          if (localStorageSyncEnabled) {
+            for (const event of eventBuffer) {
+              updateLocalStorageAfterWrite(event.action, event.data, {
+                name: config.name,
+                logger,
+                serializer,
+                localStorageSyncEnabled,
+              });
+            }
+          }
           eventBuffer.splice(0);
         }
 
@@ -200,6 +282,17 @@ export function trpcCollectionOptions<TItem extends TrpcItem>(
         ...modified,
       });
       await awaitEventId(result.eventId);
+
+      // Update local storage after insert if enabled
+      if (localStorageSyncEnabled) {
+        updateLocalStorageAfterWrite("insert", result.item, {
+          name: config.name,
+          logger,
+          serializer,
+          localStorageSyncEnabled,
+        });
+      }
+
       return { result };
     },
 
@@ -211,6 +304,17 @@ export function trpcCollectionOptions<TItem extends TrpcItem>(
         data: changes,
       });
       await awaitEventId(result.eventId);
+
+      // Update local storage after update if enabled
+      if (localStorageSyncEnabled) {
+        updateLocalStorageAfterWrite("update", result.item, {
+          name: config.name,
+          logger,
+          serializer,
+          localStorageSyncEnabled,
+        });
+      }
+
       return { result };
     },
 
@@ -221,6 +325,17 @@ export function trpcCollectionOptions<TItem extends TrpcItem>(
         id: modified.id,
       });
       await awaitEventId(result.eventId);
+
+      // Update local storage after delete if enabled
+      if (localStorageSyncEnabled) {
+        updateLocalStorageAfterWrite("delete", modified, {
+          name: config.name,
+          logger,
+          serializer,
+          localStorageSyncEnabled,
+        });
+      }
+
       return { result };
     },
   };

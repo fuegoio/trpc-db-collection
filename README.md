@@ -175,6 +175,58 @@ function TodoItem({ todo }) {
 }
 ```
 
+## Local storage persistence
+
+The library supports local storage persistence to provide offline capabilities and faster initial load times. When enabled, your collection data will be automatically saved to and restored from localStorage, with a **Stale while revalidate** mechanism: the up to date data will be fetched in background and replace your cache when up.
+
+### Benefits of Local Storage Persistence
+
+1. **Offline Support**: Your application can continue to function when the network is unavailable
+2. **Faster Load Times**: Data is immediately available from localStorage while the initial sync happens in the background
+
+### How to Enable Local Storage
+
+To enable local storage persistence, you need to configure the `trpcCollectionOptions` with the `localStorage` option:
+
+```typescript
+import { trpcCollectionOptions } from "trpc-db-collection";
+import { createCollection } from "@tanstack/react-db";
+import { trpc } from "/lib/trpc";
+
+const todosCollection = createCollection(
+  trpcCollectionOptions({
+    name: "todos",
+    trpcRouter: trpc.todos,
+    rowUpdateMode: "partial", // or 'full'
+    localStorage: true, // Enable local storage persistence
+  }),
+);
+```
+
+### 2. Configure Serializer (Optional)
+
+By default, the library uses JSON for serialization when storing data in localStorage. You can customize this by providing your own serializer, such as `superjson`:
+
+```typescript
+import { trpcCollectionOptions } from "trpc-db-collection";
+import { jsonSerializer } from "trpc-db-collection";
+import superjson from "superjson";
+
+// Use default JSON serializer
+const collectionConfig = trpcCollectionOptions({
+  name: "todos",
+  trpcRouter: todoRouter,
+  // serializer is optional, defaults to jsonSerializer
+});
+
+// Or use superjson for better type support
+const collectionConfigWithSuperjson = trpcCollectionOptions({
+  name: "todos",
+  trpcRouter: todoRouter,
+  serializer: superjson,
+});
+```
+
 ## Collection Options
 
 The `trpcCollectionOptions` function accepts:
@@ -247,15 +299,8 @@ Contributions are welcome! Please open issues for bugs or feature requests, and 
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Acknowledgements
-
-- [Tanstack](https://tanstack.com/) for their innovative data management solutions
-- [tRPC](https://trpc.io/) for the excellent type-safe API framework
-- [ElectricSQL](https://electric-sql.com/) for inspiration on real-time database patterns
-
 ## Related Resources
 
 - [Tanstack DB Documentation](https://tanstack.com/db/latest/docs/overview)
 - [tRPC Documentation](https://trpc.io/docs)
 - [Example Project Source](https://github.com/fuegoio/trpc-db-collection/tree/main/example)
-
