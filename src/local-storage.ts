@@ -18,7 +18,7 @@ export function getLocalStorageKey(collectionName: string): string {
 
 export function loadFromLocalStorage<T>(
   collectionName: string,
-  serializer: Serializer = jsonSerializer,
+  serializer: Serializer,
 ): T | null {
   try {
     const key = getLocalStorageKey(collectionName);
@@ -36,7 +36,7 @@ export function loadFromLocalStorage<T>(
 export function saveToLocalStorage<T>(
   collectionName: string,
   data: T,
-  serializer: Serializer = jsonSerializer,
+  serializer: Serializer,
 ): void {
   try {
     const key = getLocalStorageKey(collectionName);
@@ -68,7 +68,7 @@ export function updateLocalStorageAfterWrite<TItem extends TrpcItem>(
   config: {
     name: string;
     logger: Logger;
-    serializer?: Serializer;
+    serializer: Serializer;
     localStorageSyncEnabled?: boolean;
   },
 ) {

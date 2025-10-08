@@ -141,6 +141,7 @@ export function trpcCollectionOptions<TItem extends TrpcItem>(
               name: config.name,
               logger,
               localStorageSyncEnabled,
+              serializer,
             });
           }
 
@@ -159,7 +160,7 @@ export function trpcCollectionOptions<TItem extends TrpcItem>(
       try {
         // Try to load from local storage first if enabled
         const cachedData = localStorageSyncEnabled
-          ? loadFromLocalStorage<TItem[]>(config.name)
+          ? loadFromLocalStorage<TItem[]>(config.name, serializer)
           : null;
 
         begin(); // Start a transaction

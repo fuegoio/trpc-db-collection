@@ -3,6 +3,7 @@ import {
   loadFromLocalStorage,
   saveToLocalStorage,
   clearLocalStorage,
+  jsonSerializer,
 } from "./local-storage";
 
 // Mock localStorage
@@ -28,7 +29,7 @@ describe("LocalStoragePersistence", () => {
       }),
     );
 
-    const data = loadFromLocalStorage("test-collection");
+    const data = loadFromLocalStorage("test-collection", jsonSerializer);
     expect(data).toEqual({
       items: [{ id: 1, title: "Test" }],
       timestamp: expect.any(Number),
@@ -40,7 +41,7 @@ describe("LocalStoragePersistence", () => {
 
   it("should save data to localStorage", () => {
     const data = { items: [{ id: 1, title: "Test" }], timestamp: Date.now() };
-    saveToLocalStorage("test-collection", data);
+    saveToLocalStorage("test-collection", data, jsonSerializer);
 
     expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
       "trpc-db-collection-test-collection",
@@ -59,7 +60,7 @@ describe("LocalStoragePersistence", () => {
     // Mock the getItem to return null (empty)
     mockLocalStorage.getItem.mockReturnValue(null);
 
-    const data = loadFromLocalStorage("test-collection");
+    const data = loadFromLocalStorage("test-collection", jsonSerializer);
     expect(data).toBeNull();
   });
 
@@ -88,4 +89,3 @@ describe("LocalStoragePersistence", () => {
     expect(customSerializer.stringify).toHaveBeenCalled();
   });
 });
-
