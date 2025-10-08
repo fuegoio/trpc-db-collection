@@ -21,7 +21,8 @@
   "scripts": {
     "build": "tsup",
     "prepublishOnly": "npm run build",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "keywords": [],
   "author": "Alexis Tacnet <alexistacnet@gmail.com>",
@@ -34,7 +35,9 @@
   "devDependencies": {
     "@types/node": "^24.5.0",
     "tsup": "^8.5.0",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4",
+    "zod": "^4.1.12"
   },
   "peerDependencies": {
     "@tanstack/react-db": "^0.1.24",
