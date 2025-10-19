@@ -90,6 +90,12 @@ interface TrpcCollectionConfig<TItem extends TrpcItem>
    * @default true
    */
   localStorage?: boolean;
+
+  /**
+   * On event callback.
+   * @param event The event that occurred.
+   */
+  onEvent?: (event: TrpcSyncEvent<TItem>) => void;
 }
 
 export function trpcCollectionOptions<TItem extends TrpcItem>(
@@ -147,6 +153,7 @@ export function trpcCollectionOptions<TItem extends TrpcItem>(
 
           receivedEventIds.setState((prev) => new Set([...prev, data.id]));
           lastEventId = data.id;
+          config.onEvent?.(data);
         },
         onError: (error) => {
           logger.error("Sync error:", error);
@@ -233,6 +240,13 @@ export function trpcCollectionOptions<TItem extends TrpcItem>(
               });
             }
           }
+
+          for (const event of eventBuffer) {
+            receivedEventIds.setState((prev) => new Set([...prev, event.id]));
+            lastEventId = event.id;
+            config.onEvent?.(event);
+          }
+
           eventBuffer.splice(0);
         }
 
