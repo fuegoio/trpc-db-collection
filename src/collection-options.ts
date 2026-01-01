@@ -191,34 +191,32 @@ export function trpcCollectionOptions<TItem extends TrpcItem>(
         const networkData = await config.trpcRouter.list.query();
 
         // Clear existing data if we have network data
-        if (networkData.length > 0) {
-          begin();
-          // Clear existing data by removing all items
-          for (const item of cachedData || []) {
-            write({
-              type: "delete",
-              value: item,
-            });
-          }
+        begin();
+        // Clear existing data by removing all items
+        for (const item of cachedData || []) {
+          write({
+            type: "delete",
+            value: item,
+          });
+        }
 
-          // Add network data
-          for (const item of networkData) {
-            write({
-              type: "insert",
-              value: item,
-            });
-          }
-          commit();
+        // Add network data
+        for (const item of networkData) {
+          write({
+            type: "insert",
+            value: item,
+          });
+        }
+        commit();
 
-          // Save to local storage if enabled
-          if (localStorageSyncEnabled) {
-            saveToLocalStorage(config.name, networkData, serializer);
-            logger.info(
-              "Saved data to local storage",
-              networkData.length,
-              "items",
-            );
-          }
+        // Save to local storage if enabled
+        if (localStorageSyncEnabled) {
+          saveToLocalStorage(config.name, networkData, serializer);
+          logger.info(
+            "Saved data to local storage",
+            networkData.length,
+            "items",
+          );
         }
 
         // 4. Process buffered events
